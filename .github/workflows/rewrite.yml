@@ -1,0 +1,22 @@
+# Mimics purba's sign job: on an approval, rewrite the message (tree unchanged)
+# and force-push with GITHUB_TOKEN, after the approval.
+name: rewrite
+on:
+  pull_request_review:
+    types: [submitted]
+permissions:
+  contents: write
+jobs:
+  rewrite:
+    if: github.event.review.state == 'approved' && startsWith(github.event.pull_request.head.ref, 'a-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --amend --no-edit --trailer "Accepted-by: ${{ github.event.review.user.login }} at $(date -u +%T)"
+          git push --force origin "HEAD:${{ github.event.pull_request.head.ref }}"
